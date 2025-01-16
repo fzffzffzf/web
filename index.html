@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image-to-Video</title>
+    <!-- ===============================
+         (Visual Code) - Styles
+         =============================== -->
     <style>
+        /* Page layout & container */
         body {
             font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #1a1a1a, #333);
@@ -33,6 +37,7 @@
             font-weight: 600;
         }
 
+        /* Inputs & Buttons */
         input[type="text"],
         input[type="file"] {
             width: 80%;
@@ -45,6 +50,7 @@
             color: #fff;
         }
 
+        /* Hide the real file input, use a button to trigger */
         input[type="file"] {
             display: none;
         }
@@ -71,6 +77,7 @@
             background-color: #4a4ae5;
         }
 
+        /* Messages & Video */
         .error {
             color: red;
             margin-top: 15px;
@@ -110,6 +117,7 @@
             width: 80%;
             margin-top: 20px;
             border-radius: 8px;
+            display: none; /* Hide until we set the source */
         }
 
         /* Responsive design */
@@ -118,10 +126,7 @@
                 padding: 10px;
             }
 
-            button {
-                width: 90%;
-            }
-
+            button,
             input[type="text"] {
                 width: 90%;
             }
@@ -168,7 +173,7 @@
         let pollTimer = null;
 
         // Replace with your valid API Key
-        const apiKey = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiJmemYiLCJVc2VyTmFtZSI6ImZ6ZiIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxODc5MTc0MjAwMjM3NzY4NzA4IiwiUGhvbmUiOiIxMzU1NjY2MDEwOCIsIkdyb3VwSUQiOiIxODc5MTc0MjAwMjI5MzgwMTAwIiwiUGFnZU5hbWUiOiIiLCJNYWlsIjoiIiwiQ3JlYXRlVGltZSI6IjIwMjUtMDEtMTcgMDM6NTk6MzMiLCJUb2tlblR5cGUiOjEsImlzcyI6Im1pbmltYXgifQ.e9OLzSC3m-FeeOmAyL5pL0-SS1BKW57qnoCs9HBWy3buT5LyYeVpoAVeBf5bCrk25fh9sNuAWIU7smbyENh8ma2e1kbAQ4AwtZLH7HDN4aI3usCSP_p9c34MGMY3KKLDrS4lQu8jptgxMq25rsI1kQwURgy12tafNgpsfJJn3G9zge-YdDhEqbrqSfZluiEns3TW2bohiJ-5PRv7_NV5_5lTn9vZiIUQ_qh3Qu4hOQmntTHxeQBb4Dqpohu_i8PhkZqmmgvj0HqFzr_D2q6arveaqULDMO7leqJcPp4kwIrDmZ_q6Bne252PtLUMgU4XZmJHH3BjtQlAtTSuGsnLKg";
+        const apiKey = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiJmemYiLCJVc2VyTmFtZSI6ImZ6ZiIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxODc5MTc0MjAwMjM3NzY4NzA4IiwiUGhvbmUiOiIxMzU1NjY2MDEwOCIsIkdyb3VwSUQiOiIxODc5MTc0MjAwMjI5MzgwMTAwIiwiUGFnZU5hbWUiOiIiLCJNYWlsIjoiIiwiQ3JlYXRlVGltZSI6IjIwMjUtMDEtMTcgMDQ6MDM6MTAiLCJUb2tlblR5cGUiOjEsImlzcyI6Im1pbmltYXgifQ.vibaJiyooDA90iWsNYPIfxz5EvY513tMY2hvES9vXWXF7MnpQfb9rOuu7We8SjxISAT9p9HTkghBu07C7Cbc-Jg30BsKqfnZ4EzDHKfLVQr_4QHzdJsP_F5s2hgewIw0xMSCPTf4i57nCoJmOX-wOm-PoHeUIFBaP_l7I2oLJ57ZG8ZhKRxmhwtXU5Pv9HzMqQ8oduJKoXwb3cSY5TkiL7C83Mph8ibJ1zISTVMxLBW5eDBPWQ1yjRL-271osfxmyEKaeM4ru8_SMezbW75sR0FH3q8EBnlG4JYj4smenHJ8Zb9wZpnEKw9wsrHlXOByjIPDVLtoZie4oCzi9Iai_Q";
 
         // Model (could be "video-01" or "video-01-live2d", etc.)
         const model = "video-01";
@@ -232,7 +237,7 @@
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": Bearer ${apiKey}
+                    "Authorization": `Bearer ${apiKey}`
                 },
                 body: JSON.stringify(payload)
             });
@@ -249,12 +254,12 @@
         async function checkVideoStatus() {
             if (!taskId) return;
 
-            const url = https://api.minimax.chat/v1/query/video_generation?task_id=${taskId};
+            const url = `https://api.minimax.chat/v1/query/video_generation?task_id=${taskId}`;
             try {
                 const response = await fetch(url, {
                     method: "GET",
                     headers: {
-                        "Authorization": Bearer ${apiKey}
+                        "Authorization": `Bearer ${apiKey}`
                     }
                 });
                 const data = await response.json();
@@ -287,7 +292,7 @@
                     clearInterval(pollTimer);
                 } else {
                     // Could be Preparing/Queueing/Processing
-                    showStatus(Status: ${status});
+                    showStatus(`Status: ${status}`);
                 }
             } catch (error) {
                 showError("Error checking video status.");
@@ -297,12 +302,12 @@
 
         // Step 3: Retrieve the video download URL
         async function fetchVideoUrl(fileId) {
-            const url = https://api.minimax.chat/v1/files/retrieve?file_id=${fileId};
+            const url = `https://api.minimax.chat/v1/files/retrieve?file_id=${fileId}`;
             try {
                 const response = await fetch(url, {
                     method: "GET",
                     headers: {
-                        "Authorization": Bearer ${apiKey}
+                        "Authorization": `Bearer ${apiKey}`
                     }
                 });
                 const data = await response.json();
