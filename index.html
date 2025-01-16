@@ -3,151 +3,295 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Video Generation</title>
+    <title>Hailuo AI · Image-to-Video</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #0a0a0a;
+            background: linear-gradient(135deg, #1a1a1a, #333);
             color: white;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px;
+            box-sizing: border-box;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.7);
             text-align: center;
-            padding: 50px;
         }
-        input[type="file"], input[type="text"] {
-            margin: 10px 0;
-            padding: 10px;
-            background: #2b2b2b;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            font-size: 16px;
+
+        h3 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            font-weight: 600;
         }
-        button {
-            padding: 10px 20px;
-            background: #5956E9;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button:disabled {
-            background: #999;
-        }
-        video {
-            margin-top: 20px;
+
+        input[type="text"],
+        input[type="file"] {
             width: 80%;
-            border-radius: 6px;
+            margin: 12px 0;
+            padding: 12px 18px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 2px solid #444;
+            background-color: #2b2b2b;
+            color: #fff;
         }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        button {
+            width: 80%;
+            margin: 10px 0;
+            padding: 12px 18px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            background-color: #5956e9;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #4a4ae5;
+        }
+
         .error {
             color: red;
+            margin-top: 15px;
+        }
+
+        .info {
+            color: #bbb;
             margin-top: 10px;
+        }
+
+        .loading {
+            color: #fff;
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-spinner {
+            margin-left: 10px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #5956e9;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        video {
+            width: 80%;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            button {
+                width: 90%;
+            }
+
+            input[type="text"] {
+                width: 90%;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>AI Video Generation</h1>
-
-    <input type="file" id="fileInput" accept="image/*">
-    <input type="text" id="promptInput" placeholder="Enter a video description (optional)">
-    <button id="generateButton">Generate Video</button>
-
-    <div class="error" id="errorMessage"></div>
-    <video id="videoPlayer" controls style="display: none;"></video>
+    <div class="container">
+        <h3>Hailuo AI · Image-to-Video</h3>
+        <button onclick="document.getElementById('imageInput').click()">Upload Image</button>
+        <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)">
+        
+        <input type="text" id="prompt" placeholder="Enter video prompt (optional)">
+        
+        <button id="generateButton" onclick="generateVideo()">Generate Video</button>
+        
+        <div class="error" id="errorMessage"></div>
+        <div class="info" id="statusMessage"></div>
+        <div class="loading" id="loadingMessage" style="display: none;">
+            Generating video
+            <div class="loading-spinner"></div>
+        </div>
+        <video id="videoPlayer" controls></video>
+    </div>
 
     <script>
-        document.getElementById("generateButton").addEventListener("click", async function() {
-            const prompt = document.getElementById("promptInput").value;
-            const imageFile = document.getElementById("fileInput").files[0];
-
-            if (!prompt && !imageFile) {
-                alert("Please upload an image or enter a description.");
-                return;
-            }
-
-            const apiKey = "your_api_key";  // Replace with your API key
-            const model = "video-01";  // Replace with your model if necessary
-
-            let firstFrameBase64 = "";
+        let imageFile = null;
+        let prompt = "";
+        let taskId = null;
+        let videoUrl = null;
+        let pollTimer = null;
+        const apiKey = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiJmemYiLCJVc2VyTmFtZSI6ImZ6ZiIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxODc5MTc0MjAwMjM3NzY4NzA4IiwiUGhvbmUiOiIxMzU1NjY2MDEwOCIsIkdyb3VwSUQiOiIxODc5MTc0MjAwMjI5MzgwMTAwIiwiUGFnZU5hbWUiOiIiLCJNYWlsIjoiIiwiQ3JlYXRlVGltZSI6IjIwMjUtMDEtMTUgMjI6MDg6MjMiLCJUb2tlblR5cGUiOjEsImlzcyI6Im1pbmltYXgifQ.oNGHyOR4rMaQast46fl9NynXx4rGtf5y34meoinl3xmPj6Xy3WD6noRiyZNtlrNPvUtrWVS96nW2FmVrNAhWyTanKgP3S6QIX702tp_KB1_T3b-SFD6WW6nhvNQMIBL6yrET7CyNbojHZDckBS5zaYdoX0C6qH1gdJ2d1j1fmO6O0uC0oXXO-gj-qt6O3O7UxAfa9tMEdF1xZeRwGLtjf_D7BvRbuMgfz3xXtMCE4kz8ug1kOxfEB1sWy3LqdWhvUr2AzWfO71rpLdOa78fjZU2m1kMb1uUWVAmLxPX8KR-sxiyp6a_Ej10FiIVzDxbRy891e0YlxTcHnP1W66KG1w'; // Replace with your actual API key
+        const model = 'video-01'; // Set model here if needed
+        
+        // Handle image upload
+        function handleImageUpload(event) {
+            imageFile = event.target.files[0];
             if (imageFile) {
-                firstFrameBase64 = await toBase64(imageFile);
+                document.getElementById('errorMessage').textContent = '';
             }
+        }
 
-            const response = await fetch("https://api.minimax.chat/v1/video_generation", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model: model,
-                    prompt: prompt,
-                    first_frame_image: firstFrameBase64
-                })
-            });
-
-            const result = await response.json();
-            if (!response.ok) {
-                document.getElementById("errorMessage").innerText = `Error: ${result.base_resp?.status_msg || "Failed to create video task"}`;
+        // Generate video
+        async function generateVideo() {
+            prompt = document.getElementById('prompt').value.trim();
+            if (!prompt && !imageFile) {
+                showError("Please upload an image or enter a prompt!");
                 return;
             }
 
-            const taskId = result.task_id;
-            pollVideoGeneration(taskId, apiKey);
-        });
+            showStatus("Creating video...");
+            document.getElementById('loadingMessage').style.display = "flex";
+            clearInterval(pollTimer);
 
-        async function pollVideoGeneration(taskId, apiKey) {
-            const videoUrlElement = document.getElementById("videoPlayer");
+            let base64Image = "";
+            if (imageFile) {
+                base64Image = await fileToBase64(imageFile);
+            }
 
-            const pollInterval = setInterval(async () => {
-                const response = await fetch(`https://api.minimax.chat/v1/query/video_generation?task_id=${taskId}`, {
-                    method: "GET",
+            try {
+                const response = await fetch('https://api.minimax.chat/v1/video_generation', {
+                    method: 'POST',
                     headers: {
-                        "Authorization": `Bearer ${apiKey}`
-                    }
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        prompt: prompt,
+                        first_frame_image: base64Image || undefined,
+                    })
                 });
+                const data = await response.json();
 
-                const result = await response.json();
-                if (!response.ok || result.status === "Fail") {
-                    clearInterval(pollInterval);
-                    document.getElementById("errorMessage").innerText = "Video generation failed.";
+                if (!response.ok || !data.task_id) {
+                    showError("Failed to create video generation task. Please try again.");
                     return;
                 }
 
-                if (result.status === "Success") {
-                    clearInterval(pollInterval);
-                    const fileId = result.file_id;
-                    fetchVideoResult(fileId, apiKey);
-                }
-            }, 10000);  // Poll every 10 seconds
-        }
-
-        async function fetchVideoResult(fileId, apiKey) {
-            const response = await fetch(`https://api.minimax.chat/v1/files/retrieve?file_id=${fileId}`, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`
-                }
-            });
-
-            const result = await response.json();
-            if (!response.ok) {
-                document.getElementById("errorMessage").innerText = "Error fetching video.";
-                return;
+                taskId = data.task_id;
+                showStatus("Video generation in progress...");
+                pollTimer = setInterval(checkVideoStatus, 10000);
+            } catch (error) {
+                showError("Error creating video. Please check your connection or try again later.");
             }
-
-            const downloadUrl = result.file.download_url;
-            const videoUrlElement = document.getElementById("videoPlayer");
-            videoUrlElement.src = downloadUrl;
-            videoUrlElement.style.display = "block";
         }
 
-        function toBase64(file) {
+        // Poll for video status
+        async function checkVideoStatus() {
+            if (!taskId) return;
+
+            try {
+                const response = await fetch(`https://api.minimax.chat/v1/query/video_generation?task_id=${taskId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                    },
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data.status) {
+                    showError("Error checking video status.");
+                    clearInterval(pollTimer);
+                    return;
+                }
+
+                const status = data.status;
+                if (status === "Success") {
+                    videoUrl = data.file_id ? await fetchVideoUrl(data.file_id) : null;
+                    if (videoUrl) {
+                        document.getElementById('videoPlayer').src = videoUrl;
+                        showStatus("Video generation successful!");
+                    } else {
+                        showError("Video generated, but no download link found.");
+                    }
+                    clearInterval(pollTimer);
+                } else {
+                    showStatus(`Status: ${status}`);
+                }
+            } catch (error) {
+                showError("Error checking video status.");
+                clearInterval(pollTimer);
+            }
+        }
+
+        // Fetch video download URL
+        async function fetchVideoUrl(fileId) {
+            try {
+                const response = await fetch(`https://api.minimax.chat/v1/files/retrieve?file_id=${fileId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                    },
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data.file || !data.file.download_url) {
+                    showError("Error retrieving video download link.");
+                    return null;
+                }
+
+                return data.file.download_url;
+            } catch (error) {
+                showError("Error retrieving video download link.");
+                return null;
+            }
+        }
+
+        // Convert file to Base64
+        function fileToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = () => resolve(reader.result.split(",")[1]);
-                reader.onerror = reject;
                 reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
             });
+        }
+
+        // Show error message
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('statusMessage').textContent = '';
+            document.getElementById('loadingMessage').style.display = "none";
+        }
+
+        // Show status message
+        function showStatus(message) {
+            document.getElementById('statusMessage').textContent = message;
+            document.getElementById('errorMessage').textContent = '';
+            document.getElementById('loadingMessage').style.display = "none";
         }
     </script>
 </body>
