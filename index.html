@@ -10,16 +10,24 @@
             background-color: #222;
             color: white;
             padding: 20px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
         h1 {
             text-align: center;
+            margin-bottom: 20px;
         }
         .container {
             max-width: 900px;
-            margin: auto;
+            width: 100%;
             background-color: #333;
-            padding: 20px;
+            padding: 30px;
             border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            text-align: center;
         }
         button {
             width: 100%;
@@ -30,6 +38,10 @@
             font-size: 16px;
             border-radius: 6px;
             cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #4a4ac1;
         }
         input, textarea {
             width: 100%;
@@ -50,6 +62,7 @@
             margin-top: 20px;
             width: 100%;
             border-radius: 6px;
+            display: none;
         }
     </style>
 </head>
@@ -61,12 +74,12 @@
         <textarea id="promptInput" placeholder="Enter prompt (optional)"></textarea>
         <button id="generateButton">Generate Video</button>
         <div id="status" class="status"></div>
-        <video id="videoOutput" class="video" controls style="display:none;"></video>
+        <video id="videoOutput" class="video" controls></video>
     </div>
 
     <script>
-        const apiKey = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiJmemYiLCJVc2VyTmFtZSI6ImZ6ZiIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxODc5MTc0MjAwMjM3NzY4NzA4IiwiUGhvbmUiOiIxMzU1NjY2MDEwOCIsIkdyb3VwSUQiOiIxODc5MTc0MjAwMjI5MzgwMTAwIiwiUGFnZU5hbWUiOiIiLCJNYWlsIjoiIiwiQ3JlYXRlVGltZSI6IjIwMjUtMDEtMTUgMjI6MDg6MjMiLCJUb2tlblR5cGUiOjEsImlzcyI6Im1pbmltYXgifQ.oNGHyOR4rMaQast46fl9NynXx4rGtf5y34meoinl3xmPj6Xy3WD6noRiyZNtlrNPvUtrWVS96nW2FmVrNAhWyTanKgP3S6QIX702tp_KB1_T3b-SFD6WW6nhvNQMIBL6yrET7CyNbojHZDckBS5zaYdoX0C6qH1gdJ2d1j1fmO6O0uC0oXXO-gj-qt6O3O7UxAfa9tMEdF1xZeRwGLtjf_D7BvRbuMgfz3xXtMCE4kz8ug1kOxfEB1sWy3LqdWhvUr2AzWfO71rpLdOa78fjZU2m1kMb1uUWVAmLxPX8KR-sxiyp6a_Ej10FiIVzDxbRy891e0YlxTcHnP1W66KG1w";  // Replace with your actual API key
-        const model = "video-01"; // Change this if necessary
+        const apiKey = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiJmemYiLCJVc2VyTmFtZSI6ImZ6ZiIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxODc5MTc0MjAwMjM3NzY4NzA4IiwiUGhvbmUiOiIxMzU1NjY2MDEwOCIsIkdyb3VwSUQiOiIxODc5MTc0MjAwMjI5MzgwMTAwIiwiUGFnZU5hbWUiOiIiLCJNYWlsIjoiIiwiQ3JlYXRlVGltZSI6IjIwMjUtMDEtMTcgMDI6NDI6NDYiLCJUb2tlblR5cGUiOjEsImlzcyI6Im1pbmltYXgifQ.QsqP-bvHxMSCASUvmh3EX34zxcwW75ScrLaF1Scs8oUFCDgLLiN4-lAc9600EwkbQ5wrEv5mmt73BGoiVfLK7W8ai1qhXsJ-N-j42k-ZhJY0lsNGPihgHNNLVXK7pgMl3Pj2qnMbHsP0cKgNIqGNdRPhTShk1w-lc8XvQkaURTARazu3d2n2Pw1huB49-DwlmWvooe3J1o2XsPkrmtX-Ejxd-oJZOxtpFlf91JkHXqZVLl7FwGKLS710SXQXDbK5n0LflbYgZUoxs3kxNrVCqyeds_tu1d5pfC7-0AqSpHLnSkJQY-icTvLQhuzVIVDOh1C0TN3p0cS5RSLerFNPuw";  // Replace with your actual API key
+        const model = "I2V-01"; // Change this if necessary
         const generateButton = document.getElementById("generateButton");
         const imageInput = document.getElementById("imageInput");
         const promptInput = document.getElementById("promptInput");
